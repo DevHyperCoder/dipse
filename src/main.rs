@@ -16,8 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::process::exit;
+
 use dipse::run;
 
 fn main() {
-    run();
+    if let Err(e) = run() {
+        eprintln!("{}", e);
+        exit(1)
+    }
 }
