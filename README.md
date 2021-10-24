@@ -6,6 +6,12 @@ Use your same "aliases" for all your projects
 
 ## Installation
 
+### crates.io
+
+- `cargo install dipse`
+
+### Manual
+
 - Clone the repository: `git clone https://github.com/DevHyperCoder/dipse.git`
 - Change Directory into dipse: `cd dipse/`
 
@@ -13,7 +19,7 @@ Use your same "aliases" for all your projects
 - Build the code: `cargo build --release`
 - Install it: `cargo install --path .`
 
-> Eventually, dipse will be available on the AUR and crates.io
+> Eventually, dipse will be available on the AUR
 ## Features
 
 - Simple to use TOML config file
