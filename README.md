@@ -26,6 +26,15 @@ Use your same "aliases" for all your projects
 - Works if you are inside a child directory
 - Global config file
 
+## Options
+
+`-f`: Specify which config file to use
+
+## Subcommands
+
+- `list`: Lists all the aliases for current dir. Accepts the `-f` option.
+- `edit`: Edit the config file for current dir. If `-f` is provided, it will edit that instead. Uses your `$EDITOR` variable, please set it before you run this command
+
 ## Configuration
 
 Each project can have its own `.d.toml` file.
