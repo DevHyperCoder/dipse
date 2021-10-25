@@ -16,45 +16,77 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+mod args;
 mod config;
 mod error;
 mod parser;
 
 use crate::{
+    args::{Opt, SubOpt},
     config::get_config_path,
     parser::{parse_toml, Entry},
 };
 use error::Error;
 use std::{
-    env::{args, current_dir},
+    env::current_dir,
     fs,
     path::PathBuf,
     process::{Command, Output, Stdio},
 };
+use structopt::StructOpt;
 use toml::Value;
 
 /// Executor
 pub fn run() -> Result<(), Error> {
-    let config_path = get_config_path()?;
-    let mut cmd_list = args().collect::<Vec<String>>();
+    let opt = Opt::from_args();
 
-    // Removing the program name from the list of cmd to execute.
-    cmd_list.remove(0);
+    let config_path = match opt.config_path {
+        Some(c) => c,
+        None => get_config_path()?,
+    };
 
     let config_str = match fs::read_to_string(&config_path) {
         Err(a) => return Err(Error::NoFile(config_path, a)),
         Ok(s) => s,
     };
 
-    for cmd in cmd_list {
-        let entry = get_entry(&config_str)?;
+    let entry = get_entry(&config_str)?;
 
+    if let Some(sub_cmd) = opt.sub_cmd {
+        println!("{:?}", sub_cmd);
+        match sub_cmd {
+            SubOpt::List => list_entries(entry)?,
+        }
+        return Ok(());
+    }
+
+    run_cmd(opt.cmd, entry)
+}
+
+/// Run the specified commands defined in entry
+fn run_cmd(cmd_list: Vec<String>, entry: Entry) -> Result<(), Error> {
+    for cmd in cmd_list {
         let cmd_str = get_cmd_str(&entry, &cmd)?;
 
         println!("`{}`", cmd_str);
         exec_command(cmd_str)?;
     }
     Ok(())
+}
+
+/// List everything in the entry
+/// Maybe can be moved to a Display trait
+fn list_entries(entry: Entry) -> Result<(), Error> {
+    match &entry.entry_table {
+        Value::Table(table) => {
+            for key in table.keys() {
+                // Unwrap here is safe
+                println!("\"{}\": {}", key, table.get(key).unwrap())
+            }
+            Ok(())
+        }
+        _ => Err(Error::NoTable(Some(entry.path.clone()))),
+    }
 }
 
 /// Get entry for current dir from config file
