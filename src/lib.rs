@@ -36,11 +36,8 @@ use std::{
 use structopt::StructOpt;
 use toml::Value;
 
-/// Executor
-pub fn run() -> Result<(), Error> {
-    let opt = Opt::from_args();
-
-    let config_path = match opt.config_path {
+fn get_config_entry(config_path: Option<PathBuf>) -> Result<(PathBuf, String, Entry), Error> {
+    let config_path = match config_path {
         Some(c) => c,
         None => get_config_path()?,
     };
@@ -52,13 +49,32 @@ pub fn run() -> Result<(), Error> {
 
     let entry = get_entry(&config_str)?;
 
+    return Ok((config_path, config_str, entry));
+}
+
+/// Executor
+pub fn run() -> Result<(), Error> {
+    let opt = Opt::from_args();
+
     if let Some(sub_cmd) = opt.sub_cmd {
-        println!("{:?}", sub_cmd);
         match sub_cmd {
-            SubOpt::List => list_entries(entry)?,
+            SubOpt::List { config_path } => {
+                let entry = get_config_entry(config_path)?.2;
+                list_entries(entry)?
+            }
+            SubOpt::Edit { config_path } => {
+                let config_path = match config_path {
+                    Some(p) => p,
+
+                    None => get_config_entry(config_path)?.0,
+                };
+                start_editor(config_path)?;
+            }
         }
         return Ok(());
     }
+
+    let entry = get_config_entry(opt.config_path)?.2;
 
     run_cmd(opt.cmd, entry)
 }
@@ -72,6 +88,10 @@ fn run_cmd(cmd_list: Vec<String>, entry: Entry) -> Result<(), Error> {
         exec_command(cmd_str)?;
     }
     Ok(())
+}
+
+fn start_editor(config_path: PathBuf) -> Result<Output, Error> {
+    exec_command(format!("$EDITOR {}", config_path.display()))
 }
 
 /// List everything in the entry

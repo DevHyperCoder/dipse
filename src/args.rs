@@ -27,7 +27,7 @@ pub struct Opt {
     pub sub_cmd: Option<SubOpt>,
 
     /// Optional configuration path
-    #[structopt(short, long)]
+    #[structopt(short = "f", long)]
     pub config_path: Option<PathBuf>,
 
     /// List of commands to execute
@@ -37,5 +37,13 @@ pub struct Opt {
 #[derive(Debug, StructOpt)]
 pub enum SubOpt {
     /// List all entries for current dir
-    List,
+    List {
+        #[structopt(short = "f", long)]
+        config_path: Option<PathBuf>,
+    },
+    /// Opens $EDITOR so you can edit your config file for current directory
+    Edit {
+        #[structopt(short = "f", long)]
+        config_path: Option<PathBuf>,
+    },
 }
