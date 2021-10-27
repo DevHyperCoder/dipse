@@ -33,13 +33,36 @@ pub struct Opt {
 
 #[derive(Debug, StructOpt)]
 pub enum SubOpt {
-    /// List all entries for current dir
-    List,
+    #[structopt(flatten)]
+    /// CURD Operations
+    Crud(Crud),
+    ///
     /// Opens $EDITOR so you can edit your config file for current directory
     Edit,
-    /// Add a new alias
-    Add { name: String, cmd: String },
 
     #[structopt(external_subcommand)]
     Other(Vec<String>),
+}
+
+#[derive(Debug, StructOpt)]
+pub enum Crud {
+    /// Add a new alias
+    Add {
+        name: String,
+        cmd: String,
+    },
+
+    /// List all entries for current dir
+    List {
+        name: Option<String>,
+    },
+
+    Update {
+        name: String,
+        cmd: String,
+    },
+
+    Delete {
+        name: String,
+    },
 }

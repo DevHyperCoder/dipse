@@ -23,7 +23,7 @@ mod parser;
 mod utils;
 
 use crate::{
-    args::{Opt, SubOpt},
+    args::{Crud, Opt, SubOpt},
     config::get_config_path,
     parser::{parse_toml, Entry},
 };
@@ -75,17 +75,31 @@ pub fn run() -> Result<(), Error> {
 
     if let Some(sub_cmd) = opt.sub_cmd {
         match sub_cmd {
-            SubOpt::List => list_entries(entry),
             SubOpt::Edit => {
                 start_editor(config_path)?;
             }
-            SubOpt::Add { name, cmd } => {
+            SubOpt::Crud(crud) => {
+                // All entries in the file
                 let mut new_entries = entries.clone();
+
+                // Entry for the current path
                 let entry = new_entries.get_mut(_path).unwrap();
-                entry.insert(name, cmd);
+
+                match crud {
+                    Crud::List { name } => list_entries(entry, name),
+                    Crud::Add { name, cmd } => {
+                        entry.insert(name, cmd); // TODO change behaviour with proper err handling
+                    }
+                    Crud::Delete { name } => {
+                        entry.remove(&name);
+                    }
+                    Crud::Update { name, cmd } => {
+                        let entry = new_entries.get_mut(_path).unwrap();
+                        entry.insert(name, cmd); // TODO change behaviour with proper err handling
+                    }
+                }
 
                 let new_config_str = toml::to_string_pretty(&new_entries).unwrap(); // TODO error
-
                 fs::write(config_path, new_config_str).unwrap(); // TODO error
             }
             SubOpt::Other(cmd) => run_cmd(cmd, entry)?,
@@ -112,8 +126,12 @@ fn start_editor(config_path: PathBuf) -> Result<Output, Error> {
 
 /// List everything in the entry
 /// Maybe can be moved to a Display trait
-fn list_entries(entry: &Entry) {
-    println!("{:#?}", entry);
+fn list_entries(entry: &Entry, name: Option<String>) {
+    if let Some(name) = name {
+        println!("{:?}", entry.get(&name)) // TODO error
+    } else {
+        println!("{:#?}", entry);
+    }
 }
 
 /// Get command string for alias from a entry
