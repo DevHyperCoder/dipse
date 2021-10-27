@@ -22,9 +22,8 @@ use std::{fmt, io, path::PathBuf};
 pub enum Error {
     NoFile(PathBuf, io::Error),
     UnableToParse(toml::de::Error),
-    NoTable(Option<PathBuf>),
-    InsuffcientEntries(PathBuf),
     NoCmdStringFound(PathBuf, String),
+    NoConfigForPath(PathBuf),
     Command(io::Error),
     CurrentDir,
     ConfigDir,
@@ -45,8 +44,8 @@ impl fmt::Display for Error {
                 format!("{}", e)
             }
             Error::CurrentDir => "Unable to access the current working directory.".to_string(),
-            Error::InsuffcientEntries(path) => {
-                format!("Found no entries for path: {}", path.display())
+            Error::NoConfigForPath(path) => {
+                format!("No entries found for path: {}", path.display())
             }
             Error::NoCmdStringFound(path, cmd) => {
                 format!("No command {} found for path: {}", cmd, path.display())
@@ -75,10 +74,6 @@ impl fmt::Display for Error {
                 format!("Empty configuration file. Please edit {}", path.display())
             }
             Error::ConfigDir => "Could not access config directory".into(),
-            Error::NoTable(path) => match path {
-                None => "No main table found.".to_string(),
-                Some(p) => format!("No table found for path: {}", p.display()),
-            },
         };
         write!(f, "{}", err)
     }

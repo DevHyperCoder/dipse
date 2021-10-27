@@ -11,4 +11,5 @@ edition = "2018"
 [dependencies]
 toml = "0.5.8"
 dirs = "4.0"
+serde = "1.0.30"
 structopt = "0.3.5"

@@ -16,28 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::path::PathBuf;
+use std::{env::current_dir, path::PathBuf};
 
-use structopt::StructOpt;
+use crate::error::Error;
+use std::process::{Command, Output, Stdio};
 
-#[derive(StructOpt, Debug)]
-#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
-pub struct Opt {
-    #[structopt(subcommand)]
-    pub sub_cmd: Option<SubOpt>,
-
-    /// Optional configuration path
-    #[structopt(global = true, short = "f", long)]
-    pub config_path: Option<PathBuf>,
+/// Get current directory ($PWD)
+pub fn get_current_dir() -> Result<PathBuf, Error> {
+    match current_dir() {
+        Ok(d) => Ok(d),
+        Err(_) => Err(Error::CurrentDir),
+    }
 }
 
-#[derive(Debug, StructOpt)]
-pub enum SubOpt {
-    /// List all entries for current dir
-    List,
-    /// Opens $EDITOR so you can edit your config file for current directory
-    Edit,
-
-    #[structopt(external_subcommand)]
-    Other(Vec<String>),
+/// Execute command with io inherited
+pub fn exec_command(cmd_str: String) -> Result<Output, Error> {
+    match Command::new("sh")
+        .arg("-c")
+        .arg(cmd_str)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
+    {
+        Ok(e) => Ok(e),
+        Err(e) => Err(Error::Command(e)),
+    }
 }

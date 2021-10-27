@@ -20,23 +20,20 @@ mod args;
 mod config;
 mod error;
 mod parser;
+mod utils;
 
 use crate::{
     args::{Opt, SubOpt},
     config::get_config_path,
-    parser::{parse_toml, Entry},
+    parser::{parse_toml, Entries, Entry},
 };
 use error::Error;
-use std::{
-    env::current_dir,
-    fs,
-    path::PathBuf,
-    process::{Command, Output, Stdio},
-};
-use structopt::StructOpt;
-use toml::Value;
+use std::{fs, path::PathBuf, process::Output};
+use structopt::{clap::SubCommand, StructOpt};
+use utils::{exec_command, get_current_dir};
 
-fn get_config_entry(config_path: Option<PathBuf>) -> Result<(PathBuf, String, Entry), Error> {
+/// Get a tuple with config path and the config str
+fn get_config_path_and_str(config_path: Option<PathBuf>) -> Result<(PathBuf, String), Error> {
     let config_path = match config_path {
         Some(c) => c,
         None => get_config_path()?,
@@ -47,42 +44,52 @@ fn get_config_entry(config_path: Option<PathBuf>) -> Result<(PathBuf, String, En
         Ok(s) => s,
     };
 
-    let entry = get_entry(&config_str)?;
-
-    return Ok((config_path, config_str, entry));
+    return Ok((config_path, config_str));
 }
 
 /// Executor
 pub fn run() -> Result<(), Error> {
     let opt = Opt::from_args();
 
-    if let Some(sub_cmd) = opt.sub_cmd {
-        match sub_cmd {
-            SubOpt::List { config_path } => {
-                let entry = get_config_entry(config_path)?.2;
-                list_entries(entry)?
-            }
-            SubOpt::Edit { config_path } => {
-                let config_path = match config_path {
-                    Some(p) => p,
+    let config_path = opt.config_path;
 
-                    None => get_config_entry(config_path)?.0,
-                };
-                start_editor(config_path)?;
-            }
+    let (config_path, config_str) = get_config_path_and_str(config_path)?;
+
+    let pwd = get_current_dir()?;
+
+    let entries = parse_toml(&config_str)?;
+    let mut this_dir = vec![];
+    for entry in entries {
+        if entry.0.starts_with(&pwd) {
+            this_dir.push(entry)
         }
-        return Ok(());
     }
 
-    let entry = get_config_entry(opt.config_path)?.2;
+    if this_dir.len() < 1 {
+        return Err(Error::NoConfigForPath(pwd)); // TODO
+    }
 
-    run_cmd(opt.cmd, entry)
+    this_dir.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let (_path, entry) = &this_dir[0];
+
+    if let Some(sub_cmd) = opt.sub_cmd {
+        match sub_cmd {
+            SubOpt::List => list_entries(entry),
+            SubOpt::Edit => {
+                start_editor(config_path)?;
+            }
+            SubOpt::Other(cmd) => run_cmd(cmd, entry)?,
+        }
+    }
+
+    return Ok(());
 }
 
 /// Run the specified commands defined in entry
-fn run_cmd(cmd_list: Vec<String>, entry: Entry) -> Result<(), Error> {
+fn run_cmd(cmd_list: Vec<String>, entry: &Entry) -> Result<(), Error> {
     for cmd in cmd_list {
-        let cmd_str = get_cmd_str(&entry, &cmd)?;
+        let cmd_str = get_cmd_str(&entry, cmd)?;
 
         println!("`{}`", cmd_str);
         exec_command(cmd_str)?;
@@ -96,63 +103,14 @@ fn start_editor(config_path: PathBuf) -> Result<Output, Error> {
 
 /// List everything in the entry
 /// Maybe can be moved to a Display trait
-fn list_entries(entry: Entry) -> Result<(), Error> {
-    match &entry.entry_table {
-        Value::Table(table) => {
-            for key in table.keys() {
-                // Unwrap here is safe
-                println!("\"{}\": {}", key, table.get(key).unwrap())
-            }
-            Ok(())
-        }
-        _ => Err(Error::NoTable(Some(entry.path.clone()))),
-    }
-}
-
-/// Get entry for current dir from config file
-fn get_entry(config_str: &str) -> Result<Entry, Error> {
-    let current_dir = get_current_dir()?;
-
-    let all_dirs = parse_toml(config_str)?;
-    for dir in all_dirs {
-        if current_dir.clone().starts_with(&dir.path) {
-            return Ok(dir);
-        }
-    }
-    Err(Error::InsuffcientEntries(current_dir))
-}
-
-/// Get current directory ($PWD)
-fn get_current_dir() -> Result<PathBuf, Error> {
-    match current_dir() {
-        Ok(d) => Ok(d),
-        Err(_) => Err(Error::CurrentDir),
-    }
+fn list_entries(entry: &Entry) {
+    println!("{:#?}", entry);
 }
 
 /// Get command string for alias from a entry
-fn get_cmd_str(entry: &Entry, cmd: &str) -> Result<String, Error> {
-    match &entry.entry_table {
-        Value::Table(table) => match &table.get(cmd) {
-            Some(Value::String(s)) => Ok(s.to_owned()),
-
-            Some(_) | None => Err(Error::NoCmdStringFound(entry.path.clone(), cmd.to_string())),
-        },
-        _ => Err(Error::NoTable(Some(entry.path.clone()))),
-    }
-}
-
-/// Execute command with io inherited
-fn exec_command(cmd_str: String) -> Result<Output, Error> {
-    match Command::new("sh")
-        .arg("-c")
-        .arg(cmd_str)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()
-    {
-        Ok(e) => Ok(e),
-        Err(e) => Err(Error::Command(e)),
+fn get_cmd_str(entry: &Entry, cmd: String) -> Result<String, Error> {
+    match entry.get(&cmd) {
+        Some(s) => Ok(s.to_owned()),
+        None => Err(Error::NoCmdStringFound(get_current_dir()?, cmd.to_string())),
     }
 }
