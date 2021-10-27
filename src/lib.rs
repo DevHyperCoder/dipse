@@ -25,11 +25,11 @@ mod utils;
 use crate::{
     args::{Opt, SubOpt},
     config::get_config_path,
-    parser::{parse_toml, Entries, Entry},
+    parser::{parse_toml, Entry},
 };
 use error::Error;
 use std::{fs, path::PathBuf, process::Output};
-use structopt::{clap::SubCommand, StructOpt};
+use structopt::StructOpt;
 use utils::{exec_command, get_current_dir};
 
 /// Get a tuple with config path and the config str
@@ -44,7 +44,7 @@ fn get_config_path_and_str(config_path: Option<PathBuf>) -> Result<(PathBuf, Str
         Ok(s) => s,
     };
 
-    return Ok((config_path, config_str));
+    Ok((config_path, config_str))
 }
 
 /// Executor
@@ -59,19 +59,19 @@ pub fn run() -> Result<(), Error> {
 
     let entries = parse_toml(&config_str)?;
     let mut this_dir = vec![];
-    for entry in entries {
+    for entry in &entries {
         if entry.0.starts_with(&pwd) {
             this_dir.push(entry)
         }
     }
 
-    if this_dir.len() < 1 {
+    if this_dir.is_empty() {
         return Err(Error::NoConfigForPath(pwd)); // TODO
     }
 
-    this_dir.sort_by(|a, b| a.0.cmp(&b.0));
+    this_dir.sort_by(|a, b| a.0.cmp(b.0));
 
-    let (_path, entry) = &this_dir[0];
+    let (_path, entry) = this_dir[0];
 
     if let Some(sub_cmd) = opt.sub_cmd {
         match sub_cmd {
@@ -79,17 +79,26 @@ pub fn run() -> Result<(), Error> {
             SubOpt::Edit => {
                 start_editor(config_path)?;
             }
+            SubOpt::Add { name, cmd } => {
+                let mut new_entries = entries.clone();
+                let entry = new_entries.get_mut(_path).unwrap();
+                entry.insert(name, cmd);
+
+                let new_config_str = toml::to_string_pretty(&new_entries).unwrap(); // TODO error
+
+                fs::write(config_path, new_config_str).unwrap(); // TODO error
+            }
             SubOpt::Other(cmd) => run_cmd(cmd, entry)?,
         }
     }
 
-    return Ok(());
+    Ok(())
 }
 
 /// Run the specified commands defined in entry
 fn run_cmd(cmd_list: Vec<String>, entry: &Entry) -> Result<(), Error> {
     for cmd in cmd_list {
-        let cmd_str = get_cmd_str(&entry, cmd)?;
+        let cmd_str = get_cmd_str(entry, cmd)?;
 
         println!("`{}`", cmd_str);
         exec_command(cmd_str)?;

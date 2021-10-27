@@ -37,6 +37,8 @@ pub enum SubOpt {
     List,
     /// Opens $EDITOR so you can edit your config file for current directory
     Edit,
+    /// Add a new alias
+    Add { name: String, cmd: String },
 
     #[structopt(external_subcommand)]
     Other(Vec<String>),
