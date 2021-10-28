@@ -22,13 +22,16 @@ use std::{fmt, io, path::PathBuf};
 pub enum Error {
     NoFile(PathBuf, io::Error),
     UnableToParse(toml::de::Error),
+    UnableToSerialize(toml::ser::Error),
     NoCmdStringFound(PathBuf, String),
+    CmdStringExists(PathBuf, String),
     NoConfigForPath(PathBuf),
     Command(io::Error),
     CurrentDir,
     ConfigDir,
     ConfigPath(io::Error),
     ConfigFileCreation(PathBuf, io::Error),
+    ConfigFileWrite(PathBuf, io::Error),
     ConfigDirCreation(PathBuf, io::Error),
     NewConfig(PathBuf),
 }
@@ -40,7 +43,13 @@ impl fmt::Display for Error {
             Error::NoFile(file_loc, e) => {
                 format!("Could not read file: {}\n{}", file_loc.display(), e)
             }
+            Error::ConfigFileWrite(path, e) => {
+                format!("Could not write to config file: {}\n{}", path.display(), e)
+            }
             Error::UnableToParse(e) => {
+                format!("{}", e)
+            }
+            Error::UnableToSerialize(e) => {
                 format!("{}", e)
             }
             Error::CurrentDir => "Unable to access the current working directory.".to_string(),
@@ -49,6 +58,13 @@ impl fmt::Display for Error {
             }
             Error::NoCmdStringFound(path, cmd) => {
                 format!("No command {} found for path: {}", cmd, path.display())
+            }
+            Error::CmdStringExists(path, cmd) => {
+                format!(
+                    "Command {} already exists for path: {}",
+                    cmd,
+                    path.display()
+                )
             }
             Error::Command(e) => {
                 format!("{}", e)

@@ -66,7 +66,7 @@ pub fn run() -> Result<(), Error> {
     }
 
     if this_dir.is_empty() {
-        return Err(Error::NoConfigForPath(pwd)); // TODO
+        return Err(Error::NoConfigForPath(pwd));
     }
 
     this_dir.sort_by(|a, b| a.0.cmp(b.0));
@@ -86,21 +86,34 @@ pub fn run() -> Result<(), Error> {
                 let entry = new_entries.get_mut(_path).unwrap();
 
                 match crud {
-                    Crud::List { name } => list_entries(entry, name),
+                    Crud::List { name } => list_entries(entry, name)?,
                     Crud::Add { name, cmd } => {
-                        entry.insert(name, cmd); // TODO change behaviour with proper err handling
+                        if let Some(c) = entry.get(&name) {
+                            return Err(Error::CmdStringExists(get_current_dir()?, c.to_string()));
+                        }
+                        entry.insert(name, cmd);
                     }
                     Crud::Delete { name } => {
+                        if entry.get(&name).is_none() {
+                            return Err(Error::NoCmdStringFound(get_current_dir()?, name));
+                        }
                         entry.remove(&name);
                     }
                     Crud::Update { name, cmd } => {
-                        let entry = new_entries.get_mut(_path).unwrap();
-                        entry.insert(name, cmd); // TODO change behaviour with proper err handling
+                        if entry.get(&name).is_none() {
+                            return Err(Error::NoCmdStringFound(get_current_dir()?, name));
+                        }
+                        entry.insert(name, cmd);
                     }
                 }
 
-                let new_config_str = toml::to_string_pretty(&new_entries).unwrap(); // TODO error
-                fs::write(config_path, new_config_str).unwrap(); // TODO error
+                let new_config_str = match toml::to_string_pretty(&new_entries) {
+                    Err(e) => return Err(Error::UnableToSerialize(e)),
+                    Ok(s) => s,
+                };
+                if let Err(e) = fs::write(&config_path, new_config_str) {
+                    return Err(Error::ConfigFileWrite(config_path, e));
+                }
             }
             SubOpt::Other(cmd) => run_cmd(cmd, entry)?,
         }
@@ -126,12 +139,18 @@ fn start_editor(config_path: PathBuf) -> Result<Output, Error> {
 
 /// List everything in the entry
 /// Maybe can be moved to a Display trait
-fn list_entries(entry: &Entry, name: Option<String>) {
+fn list_entries(entry: &Entry, name: Option<String>) -> Result<(), Error> {
     if let Some(name) = name {
-        println!("{:?}", entry.get(&name)) // TODO error
+        match entry.get(&name) {
+            None => return Err(Error::NoCmdStringFound(get_current_dir()?, name)),
+            Some(cmd) => {
+                println!("{}: {}", name, cmd);
+            }
+        }
     } else {
         println!("{:#?}", entry);
     }
+    Ok(())
 }
 
 /// Get command string for alias from a entry
