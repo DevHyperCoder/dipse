@@ -60,7 +60,9 @@ pub fn run() -> Result<(), Error> {
     let entries = parse_toml(&config_str)?;
     let mut this_dir = vec![];
     for entry in &entries {
-        if entry.0.starts_with(&pwd) {
+        // Check if the entry path is IN the pwd
+        // This allows dipse to work when inside a nested system
+        if pwd.starts_with(entry.0) {
             this_dir.push(entry)
         }
     }
