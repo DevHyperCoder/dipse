@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::{env::current_dir, path::PathBuf};
+use std::{env::current_dir, fmt::Display, path::PathBuf};
 
 use crate::error::Error;
 use std::process::{Command, Output, Stdio};
@@ -29,11 +29,29 @@ pub fn get_current_dir() -> Result<PathBuf, Error> {
     }
 }
 
+/// Command string and params to append to it
+pub struct CommandParams {
+    /// Command name
+    pub cmd_str: String,
+    /// Parameters for command
+    pub params: Vec<String>,
+}
+
+impl Display for CommandParams {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.params.is_empty() {
+            write!(f, "{}", self.cmd_str)
+        } else {
+            write!(f, "{} {}", self.cmd_str, self.params.join(" "))
+        }
+    }
+}
+
 /// Execute command with io inherited
-pub fn exec_command(cmd_str: String) -> Result<Output, Error> {
+pub fn exec_command(cmd_params: CommandParams) -> Result<Output, Error> {
     match Command::new("sh")
         .arg("-c")
-        .arg(cmd_str)
+        .arg(format!("{}", cmd_params))
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())

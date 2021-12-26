@@ -16,19 +16,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod args;
-mod config;
-mod error;
-mod parser;
-mod utils;
+#![warn(missing_docs)]
+//! DIPSE (DIrectory Independent Project Script Executor)
+//!
+//! dipse is a tool to have the same "aliases" which map to different commands in different
+//! projects. A `run` alias could point to `cargo run` on a rust project, while on a NodeJS
+//! project, it might point to `npm run start`.
+//!
+//! ## Configuration
+//!
+//! TODO
+
+/// StructOpt and argument parsing
+pub mod args;
+/// Find, create and read config files
+pub mod config;
+/// Errors
+pub mod error;
+/// Parse config files
+pub mod parser;
+/// Utility methods
+pub mod utils;
 
 use crate::{
     args::{Crud, Opt, SubOpt},
     config::get_config_path,
     parser::{parse_toml, Entry},
+    utils::CommandParams,
 };
 use error::Error;
-use std::{fs, path::PathBuf, process::Output};
+use std::{fs, path::PathBuf, process::Output, vec};
 use structopt::StructOpt;
 use utils::{exec_command, get_current_dir};
 
@@ -59,6 +76,7 @@ pub fn run() -> Result<(), Error> {
     let pwd = get_current_dir()?;
 
     let entries = parse_toml(&config_str)?;
+
     let mut this_dir = vec![];
     for entry in &entries {
         // Check if the entry path is IN the pwd
@@ -118,7 +136,7 @@ pub fn run() -> Result<(), Error> {
                     return Err(Error::ConfigFileWrite(config_path, e));
                 }
             }
-            SubOpt::Other(cmd) => run_cmd(cmd, entry, debug)?,
+            SubOpt::Other(cmd) => run_cmd(cmd, entry, debug, opt.no_op)?,
         }
     }
 
@@ -126,20 +144,64 @@ pub fn run() -> Result<(), Error> {
 }
 
 /// Run the specified commands defined in entry
-fn run_cmd(cmd_list: Vec<String>, entry: &Entry, debug: bool) -> Result<(), Error> {
-    for cmd in cmd_list {
-        let cmd_str = get_cmd_str(entry, cmd)?;
+///
+/// If a command requires arguments, then last command will get the arguments
+///
+/// dipse build run -- args
+fn run_cmd(cmd_list: Vec<String>, entry: &Entry, debug: bool, no_op: bool) -> Result<(), Error> {
+    let index_of_splitter = cmd_list.iter().position(|s| s == "--");
 
-        if debug {
-            println!("`{}`", cmd_str);
+    let cmd_params = match index_of_splitter {
+        Some(idx) => {
+            // THese are cmds without args
+            let cmd = &cmd_list[..idx - 1];
+
+            let mut cmd_params = cmd
+                .iter()
+                .map(|c| CommandParams {
+                    cmd_str: c.to_string(),
+                    params: vec![],
+                })
+                .collect::<Vec<CommandParams>>();
+
+            let arg_cmd = &cmd_list[idx - 1];
+            let args = &cmd_list[idx + 1..];
+
+            cmd_params.push(CommandParams {
+                cmd_str: arg_cmd.to_string(),
+                params: args.into(),
+            });
+
+            cmd_params
         }
-        exec_command(cmd_str)?;
+        None => cmd_list
+            .iter()
+            .map(|c| CommandParams {
+                cmd_str: c.to_string(),
+                params: vec![],
+            })
+            .collect::<Vec<CommandParams>>(),
+    };
+
+    for mut cmd in cmd_params {
+        let cmd_str = get_cmd_str(entry, &cmd.cmd_str)?;
+        cmd.cmd_str = cmd_str.clone();
+        if debug {
+            println!("`{}`", cmd);
+        }
+        if no_op {
+            continue;
+        }
+        exec_command(cmd)?;
     }
     Ok(())
 }
 
 fn start_editor(config_path: PathBuf) -> Result<Output, Error> {
-    exec_command(format!("$EDITOR {}", config_path.display()))
+    exec_command(CommandParams {
+        cmd_str: format!("$EDITOR {}", config_path.display()),
+        params: vec![],
+    })
 }
 
 /// List everything in the entry
@@ -159,8 +221,8 @@ fn list_entries(entry: &Entry, name: Option<String>) -> Result<(), Error> {
 }
 
 /// Get command string for alias from a entry
-fn get_cmd_str(entry: &Entry, cmd: String) -> Result<String, Error> {
-    match entry.get(&cmd) {
+fn get_cmd_str(entry: &Entry, cmd: &str) -> Result<String, Error> {
+    match entry.get(cmd) {
         Some(s) => Ok(s.to_owned()),
         None => Err(Error::NoCmdStringFound(get_current_dir()?, cmd.to_string())),
     }

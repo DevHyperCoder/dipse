@@ -20,9 +20,11 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
+/// Command line options
 #[derive(StructOpt, Debug)]
 #[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
 pub struct Opt {
+    /// CRUD subcommand or alias name
     #[structopt(subcommand)]
     pub sub_cmd: Option<SubOpt>,
 
@@ -33,8 +35,13 @@ pub struct Opt {
     /// Debug option
     #[structopt(global = true, short = "d", long)]
     pub debug: bool,
+
+    /// Not run the command. Useful for debugging
+    #[structopt(global = true, short, long)]
+    pub no_op: bool,
 }
 
+/// Subcommand, CRUD or alias
 #[derive(Debug, StructOpt)]
 pub enum SubOpt {
     #[structopt(flatten)]
@@ -44,29 +51,39 @@ pub enum SubOpt {
     /// Opens $EDITOR so you can edit your config file for current directory
     Edit,
 
+    /// Alias
     #[structopt(external_subcommand)]
     Other(Vec<String>),
 }
 
+/// CRUD subcommands
 #[derive(Debug, StructOpt)]
 pub enum Crud {
     /// Add a new alias
     Add {
+        /// Name of alias
         name: String,
+        /// Command to map to
         cmd: String,
     },
 
     /// List all entries for current dir
     List {
+        /// Name of alias, if not provided, whole list is shown
         name: Option<String>,
     },
 
+    /// Update given alias
     Update {
+        /// Name of alias
         name: String,
+        /// Command to map to
         cmd: String,
     },
 
+    /// Delete given alias
     Delete {
+        /// Name of alias
         name: String,
     },
 }

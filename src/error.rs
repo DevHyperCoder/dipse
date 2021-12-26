@@ -20,19 +20,33 @@ use std::{fmt, io, path::PathBuf};
 
 /// Error enum with all possible error cases
 pub enum Error {
+    /// No file found at specified path
     NoFile(PathBuf, io::Error),
+    /// TOML Parsing error
     UnableToParse(toml::de::Error),
+    /// TOML Serialization error
     UnableToSerialize(toml::ser::Error),
+    /// Unable to find the command string in Entry map
     NoCmdStringFound(PathBuf, String),
+    /// New command to be inserted already exists
     CmdStringExists(PathBuf, String),
+    /// No configuration file found, even after traversing upwards
     NoConfigForPath(PathBuf),
+    /// Error running a shell command
     Command(io::Error),
+    /// Unable to get CWD
     CurrentDir,
+    /// Unable to get the configuration directory
     ConfigDir,
+    /// Unable to access configuration path
     ConfigPath(io::Error),
+    /// Error while file creation
     ConfigFileCreation(PathBuf, io::Error),
+    /// Error while writing to file
     ConfigFileWrite(PathBuf, io::Error),
+    /// Error while configuration directory creation
     ConfigDirCreation(PathBuf, io::Error),
+    /// Created a new configuration, time for the user to update it.
     NewConfig(PathBuf),
 }
 

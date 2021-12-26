@@ -19,7 +19,9 @@
 use crate::error::Error;
 use std::{collections::HashMap, path::PathBuf};
 
+/// Map of directory name to a key value pair of `entry`
 pub type Entries = HashMap<PathBuf, Entry>;
+/// Map of alias to actual command
 pub type Entry = HashMap<String, String>;
 
 /// Parses toml file into a list of entries
