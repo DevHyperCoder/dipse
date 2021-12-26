@@ -52,6 +52,7 @@ pub fn run() -> Result<(), Error> {
     let opt = Opt::from_args();
 
     let config_path = opt.config_path;
+    let debug = opt.debug;
 
     let (config_path, config_str) = get_config_path_and_str(config_path)?;
 
@@ -117,7 +118,7 @@ pub fn run() -> Result<(), Error> {
                     return Err(Error::ConfigFileWrite(config_path, e));
                 }
             }
-            SubOpt::Other(cmd) => run_cmd(cmd, entry)?,
+            SubOpt::Other(cmd) => run_cmd(cmd, entry, debug)?,
         }
     }
 
@@ -125,11 +126,13 @@ pub fn run() -> Result<(), Error> {
 }
 
 /// Run the specified commands defined in entry
-fn run_cmd(cmd_list: Vec<String>, entry: &Entry) -> Result<(), Error> {
+fn run_cmd(cmd_list: Vec<String>, entry: &Entry, debug: bool) -> Result<(), Error> {
     for cmd in cmd_list {
         let cmd_str = get_cmd_str(entry, cmd)?;
 
-        println!("`{}`", cmd_str);
+        if debug {
+            println!("`{}`", cmd_str);
+        }
         exec_command(cmd_str)?;
     }
     Ok(())

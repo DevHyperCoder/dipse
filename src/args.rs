@@ -29,6 +29,10 @@ pub struct Opt {
     /// Optional configuration path
     #[structopt(global = true, short = "f", long)]
     pub config_path: Option<PathBuf>,
+
+    /// Debug option
+    #[structopt(global = true, short = "d", long)]
+    pub debug: bool,
 }
 
 #[derive(Debug, StructOpt)]
