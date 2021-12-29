@@ -30,9 +30,9 @@ Use your same "aliases" for all your projects
 
 ## Options
 
-`-f`: Specify which config file to use
-`-d`: Debug flag. Print out the command to execute
-`-n`: Do not execute the command. Use in combination with `-d`
+- `-f`: Specify which config file to use
+- `-d`: Debug flag. Print out the command to execute
+- `-n`: Do not execute the command. Use in combination with `-d`
 
 ## Subcommands
 
