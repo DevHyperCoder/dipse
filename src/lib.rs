@@ -87,6 +87,10 @@ pub fn run() -> Result<(), Error> {
     if let Some(sub_cmd) = opt.sub_cmd {
         match sub_cmd {
             SubOpt::Init => {
+                let config_path = match config_path {
+                    Some(c) => Some(c),
+                    None => get_config_path()?,
+                };
                 match config_path {
                     Some(c) => return Err(Error::ConfigExist(c)),
                     None => {
@@ -98,7 +102,7 @@ pub fn run() -> Result<(), Error> {
                             Ok(e) => e,
                         };
 
-                        if let Err(e) = writeln!(f, "[\"{}\"]", new_p.display()) {
+                        if let Err(e) = writeln!(f, "[\"{}\"]", curr_dir.display()) {
                             return Err(Error::ConfigFileWrite(new_p, e));
                         }
 
