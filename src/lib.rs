@@ -98,7 +98,7 @@ pub fn run() -> Result<(), Error> {
                             Ok(e) => e,
                         };
 
-                        if let Err(e) = write!(f, "[\"{}\"]\n", new_p.display()) {
+                        if let Err(e) = writeln!(f, "[\"{}\"]", new_p.display()) {
                             return Err(Error::ConfigFileWrite(new_p, e));
                         }
 
@@ -109,7 +109,7 @@ pub fn run() -> Result<(), Error> {
                 };
             }
             SubOpt::Edit => {
-                let (config_path, config_str) = get_config_path_and_str(config_path)?;
+                let (config_path, _config_str) = get_config_path_and_str(config_path)?;
                 start_editor(config_path)?;
             }
             SubOpt::Crud(crud) => {
@@ -134,7 +134,7 @@ pub fn run() -> Result<(), Error> {
 
                 this_dir.sort_by(|a, b| a.0.cmp(b.0));
 
-                let (_path, entry) = this_dir[0];
+                let (_path, _entry) = this_dir[0];
 
                 // All entries in the file
                 let mut new_entries = entries.clone();
@@ -173,7 +173,7 @@ pub fn run() -> Result<(), Error> {
                 }
             }
             SubOpt::Other(cmd) => {
-                let (config_path, config_str) = get_config_path_and_str(config_path)?;
+                let (_config_path, config_str) = get_config_path_and_str(config_path)?;
 
                 let pwd = get_current_dir()?;
 

@@ -17,8 +17,7 @@
  */
 
 use crate::error::Error;
-use dirs::config_dir;
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 // Returns .d.toml if it exists in current directory or any parent dir
 // Or the XDG spec config/dipse/d.toml
@@ -45,34 +44,5 @@ pub fn get_config_path() -> Result<Option<PathBuf>, Error> {
         Err(e) => return Err(Error::ConfigPath(e)),
         Ok(c) => c,
     };
-    if let Some(config_path) = traverse_upwards_for_config(&mut curr_path) {
-        return Ok(Some(config_path));
-    } else {
-        return Ok(None);
-    }
-}
-// create config dir if not exist and error out for user to fill it in
-// If it exists, returns the path
-fn create_config_file() -> Result<PathBuf, Error> {
-    let config_dir = match config_dir() {
-        Some(c) => c,
-        None => return Err(Error::ConfigDir),
-    };
-
-    let config_dir = &config_dir.join("dipse");
-    let config_file = &config_dir.join("d.toml");
-
-    if config_file.exists() {
-        return Ok(config_file.to_path_buf());
-    }
-
-    if let Err(e) = fs::create_dir_all(config_dir) {
-        return Err(Error::ConfigDirCreation(config_dir.to_path_buf(), e));
-    }
-
-    if let Err(e) = fs::File::create(config_file) {
-        return Err(Error::ConfigFileCreation(config_dir.to_path_buf(), e));
-    }
-
-    Err(Error::NewConfig(config_file.to_path_buf()))
+    Ok(traverse_upwards_for_config(&mut curr_path))
 }

@@ -63,9 +63,8 @@ impl fmt::Display for Error {
                 format!("configuration file alr exist at {:?}", p)
             }
             Error::NoConfigFile => {
-                format!(
-                    "No configuration file found. Create one in this directory using `dipse init`"
-                )
+                "No configuration file found. Create one in this directory using `dipse init`"
+                    .to_string()
             }
             Error::NoFile(file_loc, e) => {
                 format!("Could not read file: {}\n{}", file_loc.display(), e)
@@ -116,7 +115,7 @@ impl fmt::Display for Error {
             Error::NewConfig(path) => {
                 format!("Empty configuration file. Please edit {}", path.display())
             }
-            Error::ConfigDir => "Could not access config directory".into(),
+            Error::ConfigDir => "Could not access config directory".to_string(),
         };
         write!(f, "{}", err)
     }
