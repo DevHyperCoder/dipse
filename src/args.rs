@@ -51,6 +51,9 @@ pub enum SubOpt {
     /// Opens $EDITOR so you can edit your config file for current directory
     Edit,
 
+    /// Init
+    Init,
+
     /// Alias
     #[structopt(external_subcommand)]
     Other(Vec<String>),

@@ -20,6 +20,8 @@ use std::{fmt, io, path::PathBuf};
 
 /// Error enum with all possible error cases
 pub enum Error {
+    /// Configuration alr exists for init cmd
+    ConfigExist(PathBuf),
     /// No file found at specified path
     NoFile(PathBuf, io::Error),
     /// TOML Parsing error
@@ -48,12 +50,23 @@ pub enum Error {
     ConfigDirCreation(PathBuf, io::Error),
     /// Created a new configuration, time for the user to update it.
     NewConfig(PathBuf),
+
+    /// When config file is not found
+    NoConfigFile,
 }
 
 /// User readable error messages
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match self {
+            Error::ConfigExist(p) => {
+                format!("configuration file alr exist at {:?}", p)
+            }
+            Error::NoConfigFile => {
+                format!(
+                    "No configuration file found. Create one in this directory using `dipse init`"
+                )
+            }
             Error::NoFile(file_loc, e) => {
                 format!("Could not read file: {}\n{}", file_loc.display(), e)
             }

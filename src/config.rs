@@ -40,17 +40,16 @@ fn traverse_upwards_for_config(path: &mut PathBuf) -> Option<PathBuf> {
 
 /// Get a config file path.
 /// First traverse upwards for config
-/// Otherwise create a config file if not exist and error out
-pub fn get_config_path() -> Result<PathBuf, Error> {
+pub fn get_config_path() -> Result<Option<PathBuf>, Error> {
     let mut curr_path = match PathBuf::from(".").canonicalize() {
         Err(e) => return Err(Error::ConfigPath(e)),
         Ok(c) => c,
     };
     if let Some(config_path) = traverse_upwards_for_config(&mut curr_path) {
-        return Ok(config_path);
+        return Ok(Some(config_path));
+    } else {
+        return Ok(None);
     }
-
-    create_config_file()
 }
 // create config dir if not exist and error out for user to fill it in
 // If it exists, returns the path
