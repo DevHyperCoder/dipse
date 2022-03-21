@@ -69,8 +69,6 @@ fn get_config_path_and_str(config_path: Option<PathBuf>) -> Result<(PathBuf, Str
                 Ok(s) => s,
             };
 
-            println!("C: {}", config_str);
-
             Ok((e, config_str))
         }
         None => Err(Error::NoConfigFile),
