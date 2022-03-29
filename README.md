@@ -59,7 +59,7 @@ r = "npm run dev"
 b = "npm run build"
 ```
 
-See how in the above example, the aliases work for both `/rust/project` and `/node/project`
+See how in the above example, the aliases work for both `/rust/project` and `/node/project`. Path can also be relative.
 
 > NOTE: Each path and command needs to be inside ""
 
