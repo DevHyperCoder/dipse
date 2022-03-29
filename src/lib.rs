@@ -123,9 +123,11 @@ pub fn run() -> Result<(), Error> {
 
                 let mut this_dir = vec![];
                 for entry in &entries {
+                    let entry_path = config_path.join(entry.0).canonicalize().expect("asdf");
+
                     // Check if the entry path is IN the pwd
                     // This allows dipse to work when inside a nested system
-                    if pwd.starts_with(entry.0) {
+                    if pwd.starts_with(entry_path) {
                         this_dir.push(entry)
                     }
                 }
@@ -134,7 +136,7 @@ pub fn run() -> Result<(), Error> {
                     return Err(Error::NoConfigForPath(pwd));
                 }
 
-                this_dir.sort_by(|a, b| a.0.cmp(b.0));
+                this_dir.sort_by(|a, b| b.0.cmp(a.0));
 
                 let (_path, _entry) = this_dir[0];
 
@@ -175,7 +177,7 @@ pub fn run() -> Result<(), Error> {
                 }
             }
             SubOpt::Other(cmd) => {
-                let (_config_path, config_str) = get_config_path_and_str(config_path)?;
+                let (config_path, config_str) = get_config_path_and_str(config_path)?;
 
                 let pwd = get_current_dir()?;
 
@@ -183,9 +185,11 @@ pub fn run() -> Result<(), Error> {
 
                 let mut this_dir = vec![];
                 for entry in &entries {
+                    let entry_path = config_path.join(entry.0).canonicalize().expect("asdf");
+
                     // Check if the entry path is IN the pwd
                     // This allows dipse to work when inside a nested system
-                    if pwd.starts_with(entry.0) {
+                    if pwd.starts_with(entry_path) {
                         this_dir.push(entry)
                     }
                 }
@@ -194,7 +198,7 @@ pub fn run() -> Result<(), Error> {
                     return Err(Error::NoConfigForPath(pwd));
                 }
 
-                this_dir.sort_by(|a, b| a.0.cmp(b.0));
+                this_dir.sort_by(|a, b| b.0.cmp(a.0));
 
                 let (_path, entry) = this_dir[0];
 
