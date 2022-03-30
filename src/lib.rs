@@ -121,9 +121,12 @@ pub fn run() -> Result<(), Error> {
 
                 let entries = parse_toml(&config_str)?;
 
+                let mut c = config_path.clone();
+                c.pop();
+
                 let mut this_dir = vec![];
                 for entry in &entries {
-                    let entry_path = config_path.join(entry.0).canonicalize().expect("asdf");
+                    let entry_path = c.join(entry.0).canonicalize().expect("asdf");
 
                     // Check if the entry path is IN the pwd
                     // This allows dipse to work when inside a nested system
@@ -177,15 +180,19 @@ pub fn run() -> Result<(), Error> {
                 }
             }
             SubOpt::Other(cmd) => {
-                let (config_path, config_str) = get_config_path_and_str(config_path)?;
+                let (mut config_path, config_str) = get_config_path_and_str(config_path)?;
 
                 let pwd = get_current_dir()?;
 
                 let entries = parse_toml(&config_str)?;
 
+                config_path.pop();
+
                 let mut this_dir = vec![];
                 for entry in &entries {
-                    let entry_path = config_path.join(entry.0).canonicalize().expect("asdf");
+                    let entry_path = config_path.join(entry.0);
+                    //println!("{:?}", entry_path);
+                    //let a  = entry_path.canonicalize().expect("a");
 
                     // Check if the entry path is IN the pwd
                     // This allows dipse to work when inside a nested system
